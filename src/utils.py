@@ -1,5 +1,5 @@
 from src.mqtt_sender import MqttMessage
-from pyb import RTC
+import ujson 
 
 sources = [
     {
@@ -17,6 +17,12 @@ def parse_string_to_int(s):
         value = s + ' value is not an integer'
     return value
 
+def isfloat(value):
+  try:
+    float(value)
+    return True
+  except ValueError:
+    return False
 
 def transfrom_payload(payload):
     payload = payload.split(',')
@@ -36,12 +42,16 @@ def transfrom_payload(payload):
         print('Source map could not be identified for source indentifier ', source)
         return
 
-    message_content = {
-        'location': source_map['location']
-    }
+    message_content = {}
 
     for index, item in enumerate(payload_map):
-        message_content[item] = payload[index]
+        value = payload[index]
 
-    print(message_content)
+        if isfloat(value):
+            value = float(value)
+
+        message_content[item] = value
+
+    message_content = ujson.dumps(message_content)
+
     return MqttMessage(source_map['topic'], message_content)
