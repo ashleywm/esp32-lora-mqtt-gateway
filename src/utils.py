@@ -1,5 +1,5 @@
 from src.mqtt_sender import MqttMessage
-from pyb import RTC
+import ujson
 
 locations = [
     {
@@ -116,5 +116,7 @@ def transfrom_payload(payload):
         topic += '/sensor/' + sensor['name']
     else:
         topic += '/sensor/unkown'
+
+    message_content = ujson.dumps(message_content)
 
     return MqttMessage(topic, message_content)
