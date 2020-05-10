@@ -1,12 +1,35 @@
 from src.mqtt_sender import MqttMessage
 from pyb import RTC
 
-sources = [
+locations = [
     {
-        'location': 'OUTSIDE',
-        'topic': '/outside/sensor/bme280',
-        'payload_mapping': ['temperature', 'pressure', 'humidity']
+        'id': 1,
+        'name': 'allotment'
     }
+]
+
+sensors = [
+    {
+        'id': 1,
+        'name': 'bme280',
+        'payload_mapping': ['temperature', 'pressure', 'humidity']
+    },
+    {
+        'id': 2,
+        'name': 'bh1750',
+        'payload_mapping': ['luminosity']
+    },
+    {
+        'id': 3,
+        'name': 'ds18b20',
+        'payload_mapping': ['temperature']
+    },
+    {
+        'id': 4,
+        'name': 'csms',
+        'payload_mapping': ['mositure']
+    },
+
 ]
 
 
@@ -18,30 +41,80 @@ def parse_string_to_int(s):
     return value
 
 
+def parse_string_to_float(s):
+    try:
+        value = float(s)
+    except ValueError:
+        value = s + ' value is not an integer'
+    return value
+
+
+def represents_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+
+def represents_float(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
 def transfrom_payload(payload):
     payload = payload.split(',')
 
-    if len(payload) < 2:
+    if len(payload) < 3:
         print('Payload cannot be jsonified')
         return
 
-    source = payload[0]
-    source = parse_string_to_int(source)
+    location_id = payload[0]
+    location_id = parse_string_to_int(location_id)
+
+    sensor_id = payload[1]
+    sensor_id = parse_string_to_int(sensor_id)
+
+    del payload[0]
     del payload[0]
 
-    source_map = sources[source]
-    payload_map = source_map['payload_mapping']
+    location = None
+    sensor = None
 
-    if source_map is None:
-        print('Source map could not be identified for source indentifier ', source)
-        return
+    for loc in locations:
+        if loc['id'] == location_id:
+            location = loc
 
-    message_content = {
-        'location': source_map['location']
-    }
+    for sen in sensors:
+        if sen['id'] == sensor_id:
+            sensor = sen
+
+    payload_map = sensor['payload_mapping']
+
+    message_content = {}
 
     for index, item in enumerate(payload_map):
-        message_content[item] = payload[index]
+        reading = payload[index]
+        if represents_int(reading):
+            message_content[item] = parse_string_to_int(reading)
+        elif represents_float(reading):
+            message_content[item] = parse_string_to_float(reading)
+        else:
+            message_content[item] = reading
 
-    print(message_content)
-    return MqttMessage(source_map['topic'], message_content)
+    topic = ''
+
+    if location['name']:
+        topic += '/' + location['name']
+    else:
+        topic += '/unknown'
+
+    if sensor['name']:
+        topic += '/sensor/' + sensor['name']
+    else:
+        topic += '/sensor/unkown'
+
+    return MqttMessage(topic, message_content)
