@@ -29,7 +29,11 @@ sensors = [
         'name': 'csms',
         'payload_mapping': ['mositure']
     },
-
+    {
+        'id': 5,
+        'name': 'battery',
+        'payload_mapping': ['battery_level']
+    }
 ]
 
 

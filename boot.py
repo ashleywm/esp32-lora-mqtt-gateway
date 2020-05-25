@@ -2,6 +2,7 @@ import gc
 import time
 import machine
 import micropython
+import utime
 import network
 import esp
 from lib.mqtt import MQTTClient
@@ -37,13 +38,13 @@ while station.isconnected() == False:
 
 print('WiFi Connection successful')
 
+time.sleep(5)
+
 try:
     ntptime.settime()
-    print('RTC Updated time is', time.time())
+    print('RTC Updated time is', utime.localtime())
 except OSError as e:
     print('Unable to update RTC from NTP server')
-    print('Resetting in 5 seconds')
-    time.sleep(5)
     machine.reset()
 
 try:
