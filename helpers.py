@@ -1,40 +1,19 @@
-from src.mqtt_sender import MqttMessage
 import ujson
+import mappings
+import usocket
 
-locations = [
-    {
-        'id': 1,
-        'name': 'allotment'
-    }
-]
 
-sensors = [
-    {
-        'id': 1,
-        'name': 'bme280',
-        'payload_mapping': ['temperature', 'pressure', 'humidity']
-    },
-    {
-        'id': 2,
-        'name': 'bh1750',
-        'payload_mapping': ['luminosity']
-    },
-    {
-        'id': 3,
-        'name': 'ds18b20',
-        'payload_mapping': ['temperature']
-    },
-    {
-        'id': 4,
-        'name': 'csms',
-        'payload_mapping': ['mositure']
-    },
-    {
-        'id': 5,
-        'name': 'battery',
-        'payload_mapping': ['battery_level']
-    }
-]
+def is_connected():
+    try:
+        s = usocket.socket(usocket.AF_INET, usocket.SOCK_RAW, 1)
+        addr = usocket.getaddrinfo('192.168.32.1', 1)[0][-1][0]  # ip address
+        s.connect((addr, 1))
+        s.close()
+        return True
+    except Exception as e:
+        print(e)
+        pass
+    return False
 
 
 def parse_string_to_int(s):
@@ -88,11 +67,11 @@ def transfrom_payload(payload):
     location = None
     sensor = None
 
-    for loc in locations:
+    for loc in mappings.locations:
         if loc['id'] == location_id:
             location = loc
 
-    for sen in sensors:
+    for sen in mappings.sensors:
         if sen['id'] == sensor_id:
             sensor = sen
 
@@ -123,4 +102,4 @@ def transfrom_payload(payload):
 
     message_content = ujson.dumps(message_content)
 
-    return MqttMessage(topic, message_content)
+    return (topic, message_content)
