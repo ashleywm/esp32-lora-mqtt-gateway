@@ -7,7 +7,8 @@ from machine import Pin, SPI
 import network
 import time
 import config
-from helpers import transfrom_payload, is_connected
+import ujson
+from helpers import transfrom_payload, transform_rssi_payload, is_connected
 
 success_led = Pin(config.status_led['success'], Pin.OUT)
 failure_led = Pin(config.status_led['failure'], Pin.OUT)
@@ -77,14 +78,21 @@ async def messageWorker(mqtt_client, station):
     while True:
         result = await(q.get())
         topic, payload = transfrom_payload(result[0])
+        rssi_topic, rssi_payload = transform_rssi_payload(result[1])
 
         for attempt in range(10):
             try:
                 print('Trying publish', payload, 'on topic',
                       topic, ' in attempt', attempt)
+
                 mqtt_client.publish(
                     config.mqtt_settings['default_topic'], result[0])
-                mqtt_client.publish(topic, payload)
+
+                if (topic is not None and payload is not None):
+                    mqtt_client.publish(topic, payload)
+
+                if (rssi_topic is not None and rssi_payload is not None):
+                    mqtt_client.publish(rssi_topic, rssi_payload)
             except:
                 if (station.isconnected() == False):
                     setupWifi()
@@ -108,6 +116,8 @@ def onReceive(lora, payload):
 
         q.put_nowait([payload, rssi])
     except Exception as e:
+        print('recieved failed')
+        raiseFailure()
         print(e)
 
 

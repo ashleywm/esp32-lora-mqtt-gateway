@@ -48,12 +48,28 @@ def represents_float(s):
         return False
 
 
+def transform_rssi_payload(rssi):
+    topic = '/allotment/sensor/sx1276'
+    message_content = {}
+
+    if represents_int(rssi):
+        message_content["rssi"] = parse_string_to_int(rssi)
+    elif represents_float(rssi):
+        message_content["rssi"] = parse_string_to_float(rssi)
+    else:
+        message_content["rssi"] = rssi
+
+    message_content = ujson.dumps(message_content)
+
+    return (topic, message_content)
+
+
 def transfrom_payload(payload):
     payload = payload.split(',')
 
     if len(payload) < 3:
         print('Payload cannot be jsonified')
-        return
+        return (None, None)
 
     location_id = payload[0]
     location_id = parse_string_to_int(location_id)
